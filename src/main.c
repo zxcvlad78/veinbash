@@ -18,6 +18,8 @@ int main(int argc, char *argv[]) {
   ecs_set(world, entity, MoveSpeed, {50.0f, 50.0f});
   ecs_set(world, entity, Velocity, {0.0f, 0.0f});
   ecs_set(world, entity, WishVelocity, {0.0f, 0.0f});
+  ecs_set(world, entity, Sprite,
+          {LoadTexture("data/atlas.png"), {0.0f, 0.0f, 16.0f, 32.0f}});
 
   while (!WindowShouldClose()) {
     ecs_progress(world, GetFrameTime());
