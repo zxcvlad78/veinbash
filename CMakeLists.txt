@@ -24,7 +24,7 @@ set(FLECS_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(flecs
     GIT_REPOSITORY https://github.com/SanderMertens/flecs.git
-    GIT_TAG 4.2.0
+    GIT_TAG v4.2.0
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(flecs)
@@ -48,10 +48,15 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(lua PUBLIC m ${CMAKE_DL_LIBS})
 endif()
 
-file(GLOB ${PROJECT_NAME}_SOURCES "*.c")
+file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES "src/*.c")
 add_executable(${PROJECT_NAME}
     ${PROJECT_NAME}_SOURCES
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "include/"
+)
+
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     raylib
