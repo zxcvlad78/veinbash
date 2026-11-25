@@ -7,10 +7,12 @@ typedef struct {
   float angular;
 } Velocity, WishVelocity;
 
+Vector2 normalize_vector2(Vector2 v);
+
 typedef struct {
   Vector2 translation;
-  Quaternion rotation;
-  Vector3 scale;
+  Vector2 scale;
+  float rotation;
 } Transform2D;
 
 extern ECS_COMPONENT_DECLARE(Velocity);

@@ -10,7 +10,13 @@ void Render(ecs_iter_t *it) {
   Sprite *s = ecs_field(it, Sprite, 1);
 
   for (int i = 0; i < it->count; i++) {
-    DrawTextureRec(s[i].texture, s[i].rect, t[i].translation, WHITE);
+    Rectangle dest = {t[i].translation.x, t[i].translation.y,
+                      s[i].rect.width * t[i].scale.x,
+                      s[i].rect.height * t[i].scale.y};
+
+    Vector2 origin = {0.0f, 0.0f};
+
+    DrawTexturePro(s[i].texture, s[i].rect, dest, origin, t[i].rotation, WHITE);
   }
 }
 

@@ -13,9 +13,9 @@ int main(int argc, char *argv[]) {
   ECS_IMPORT(world, CharacterModule);
 
   ecs_entity_t entity = ecs_new(world);
-  ecs_set(world, entity, Transform2D, {{640.0f, 320.0f}});
+  ecs_set(world, entity, Transform2D, {{640.0f, 320.0f}, {2.0f, 2.0f}});
   ecs_set(world, entity, CharacterControl, {0, 0, 0, 0});
-  ecs_set(world, entity, MoveSpeed, {50.0f, 50.0f});
+  ecs_set(world, entity, MoveSpeed, {150.0f, 150.0f});
   ecs_set(world, entity, Velocity, {0.0f, 0.0f});
   ecs_set(world, entity, WishVelocity, {0.0f, 0.0f});
   ecs_set(world, entity, Sprite,

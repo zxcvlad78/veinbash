@@ -25,10 +25,16 @@ void ApplyInputToWishVelocity(ecs_iter_t *it) {
   for (int i = 0; i < it->count; i++) {
     wv[i].linear.x = 0.0f;
     wv[i].linear.y = 0.0f;
-    wv[i].linear.x += ((float)cc[i].right) * ms[i].x;
-    wv[i].linear.x -= ((float)cc[i].left) * ms[i].x;
-    wv[i].linear.y += ((float)cc[i].down) * ms[i].y;
-    wv[i].linear.y -= ((float)cc[i].up) * ms[i].y;
+    wv[i].linear.x += ((float)cc[i].right);
+    wv[i].linear.x -= ((float)cc[i].left);
+    wv[i].linear.y += ((float)cc[i].down);
+    wv[i].linear.y -= ((float)cc[i].up);
+
+    wv[i].linear = normalize_vector2(wv[i].linear);
+    wv[i].linear.x *= ms[i].x;
+    wv[i].linear.y *= ms[i].y;
+
+    printf("normvel: {%f, %f}\n", wv[i].linear.x, wv[i].linear.y);
   }
 }
 
