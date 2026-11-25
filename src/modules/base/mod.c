@@ -12,8 +12,8 @@ void WishMove(ecs_iter_t *it) {
   Velocity *v = ecs_field(it, Velocity, 1);
 
   for (int i = 0; i < it->count; i++) {
-    v[i].x += lerp_f(v[i].x, wv[i].x, 1.0f * it->delta_time);
-    v[i].y += lerp_f(v[i].y, wv[i].y, 1.0f * it->delta_time);
+    v[i].x = lerp_f(v[i].x, wv[i].x, 1.0f * it->delta_time);
+    v[i].y = lerp_f(v[i].y, wv[i].y, 1.0f * it->delta_time);
   }
 }
 

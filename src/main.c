@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
   ecs_entity_t entity = ecs_new(world);
   ecs_set(world, entity, Position, {640.0f, 320.0f});
   ecs_set(world, entity, CharacterControl, {0, 0, 0, 0});
-  ecs_set(world, entity, MoveSpeed, {5.0f, 5.0f});
+  ecs_set(world, entity, MoveSpeed, {50.0f, 50.0f});
   ecs_set(world, entity, Velocity, {0.0f, 0.0f});
   ecs_set(world, entity, WishVelocity, {0.0f, 0.0f});
 
