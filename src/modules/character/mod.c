@@ -23,13 +23,12 @@ void ApplyInputToWishVelocity(ecs_iter_t *it) {
   MoveSpeed *ms = ecs_field(it, MoveSpeed, 2);
 
   for (int i = 0; i < it->count; i++) {
-    wv[i].x = 0.0f;
-    wv[i].y = 0.0f;
-    wv[i].x += ((float)cc[i].right) * ms[i].x;
-    wv[i].x -= ((float)cc[i].left) * ms[i].x;
-    wv[i].y += ((float)cc[i].down) * ms[i].y;
-    wv[i].y -= ((float)cc[i].up) * ms[i].y;
-    printf("Chracter Direction: %f, %f\n", wv[i].x, wv[i].y);
+    wv[i].linear.x = 0.0f;
+    wv[i].linear.y = 0.0f;
+    wv[i].linear.x += ((float)cc[i].right) * ms[i].x;
+    wv[i].linear.x -= ((float)cc[i].left) * ms[i].x;
+    wv[i].linear.y += ((float)cc[i].down) * ms[i].y;
+    wv[i].linear.y -= ((float)cc[i].up) * ms[i].y;
   }
 }
 
