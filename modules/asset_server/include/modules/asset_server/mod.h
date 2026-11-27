@@ -76,7 +76,7 @@ extern ECS_COMPONENT_DECLARE(AssetServerState);
 /* Register this module before asset_server_init(). */
 void AssetServerModuleImport(ecs_world_t *world);
 
-AssetServerConfig asset_server_default_config(void);
+AssetServerConfig asset_server_config_default(void);
 bool asset_server_init(ecs_world_t *world, const AssetServerConfig *config);
 void asset_server_fini(ecs_world_t *world);
 

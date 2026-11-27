@@ -647,18 +647,25 @@ static uint32_t asset_default_worker_count(void) {
 
 static void asset_scene_owner_on_remove(ecs_iter_t *it);
 
+static void UpdatePump(ecs_iter_t *it) {
+    (void)asset_server_pump(it->world, 4u);
+}
+
 void AssetServerModuleImport(ecs_world_t *world) {
     ECS_MODULE(world, AssetServerModule);
     ECS_COMPONENT_DEFINE(world, AssetServerState);
     ECS_COMPONENT_DEFINE(world, AssetSceneOwner);
+    
     ecs_set_hooks(world, AssetSceneOwner, {
         .on_remove = asset_scene_owner_on_remove
     });
 
-    asset_server_init(world, NULL);
+    if (!asset_server_init(world, NULL)) return;
+
+    ECS_SYSTEM(world, UpdatePump, EcsPreUpdate);
 }
 
-AssetServerConfig asset_server_default_config(void) {
+AssetServerConfig asset_server_config_default(void) {
     AssetServerConfig config;
     config.root_directory = "data";
     config.max_textures = 8192u;
@@ -698,7 +705,7 @@ bool asset_server_init(ecs_world_t *world, const AssetServerConfig *input_config
         return false;
     }
 
-    const AssetServerConfig defaults = asset_server_default_config();
+    const AssetServerConfig defaults = asset_server_config_default();
     const AssetServerConfig config = input_config ? *input_config : defaults;
     const char *root = config.root_directory && config.root_directory[0]
         ? config.root_directory : "data";
@@ -1034,8 +1041,8 @@ AssetTextureId asset_scene_texture(ecs_world_t *world,
                                    const char *relative_path,
                                    AssetPriority priority) {
     AssetServer *server = (AssetServer *)asset_server_get(world);
-    if (!server || !scene || ecs_id(Scene) == 0u ||
-        !ecs_has(world, scene, Scene)) {
+    if (!server || !scene || ecs_id(vbScene) == 0u ||
+        !ecs_has(world, scene, vbScene)) {
         return ASSET_TEXTURE_INVALID;
     }
 
