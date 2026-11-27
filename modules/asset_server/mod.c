@@ -1,6 +1,12 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include <vb/modules/asset_server/mod.h>
+#if defined(_WIN32)
+    #define WIN32_LEAN_AND_MEAN
+    #define NOGDI
+    #define NOUSER
+#endif
+
+#include <modules/asset_server/mod.h>
 
 #include <limits.h>
 #include <stdio.h>
@@ -21,13 +27,36 @@
     typedef pthread_t AssetThread;
 #endif
 
+#include <raylib.h>
+
+
 ECS_COMPONENT_DECLARE(AssetServerState);
+
+typedef struct AssetSceneOwner {
+    uint32_t slot;
+    uint32_t generation;
+    uint64_t server_instance;
+} AssetSceneOwner;
+
+ECS_COMPONENT_DECLARE(AssetSceneOwner);
+
+typedef struct AssetSceneRecord {
+    ecs_entity_t scene_entity;
+    uint32_t generation;
+    uint32_t next_free;
+    AssetTextureId *textures;
+    uint32_t texture_count;
+    uint32_t texture_capacity;
+    bool active;
+} AssetSceneRecord;
+
+static uint64_t g_asset_server_instance = 1u;
 
 typedef struct AssetTextureEntry {
     char *path;                 /* Immutable until server shutdown. */
     uint64_t hash;
     uint32_t revision;          /* Cold-path cancellation/version token. */
-    uint32_t bundle_owners;     /* Updated only at bundle load/unload. */
+    uint32_t scene_owners;      /* Updated only at scene load/unload. */
     AssetTextureStatus status;
     bool globally_pinned;
     char error[128];
@@ -60,6 +89,12 @@ struct AssetServer {
     Texture2D *gpu_textures;
     AssetTextureEntry *entries;
     uint32_t texture_count;
+
+    /* Fixed-capacity Scene owner table; only touched during scene load/unload. */
+    AssetSceneRecord *scene_records;
+    uint32_t scene_capacity;
+    uint32_t scene_free_head;
+    uint64_t instance_id;
     uint32_t texture_capacity;
 
     /* Open-addressed path -> (AssetTextureId + 1), no deletion/tombstones. */
@@ -610,9 +645,17 @@ static uint32_t asset_default_worker_count(void) {
 /* Flecs integration and public API                                            */
 /* -------------------------------------------------------------------------- */
 
+static void asset_scene_owner_on_remove(ecs_iter_t *it);
+
 void AssetServerModuleImport(ecs_world_t *world) {
     ECS_MODULE(world, AssetServerModule);
     ECS_COMPONENT_DEFINE(world, AssetServerState);
+    ECS_COMPONENT_DEFINE(world, AssetSceneOwner);
+    ecs_set_hooks(world, AssetSceneOwner, {
+        .on_remove = asset_scene_owner_on_remove
+    });
+
+    asset_server_init(world, NULL);
 }
 
 AssetServerConfig asset_server_default_config(void) {
@@ -622,6 +665,7 @@ AssetServerConfig asset_server_default_config(void) {
     config.worker_count = 0u;
     config.job_queue_capacity = 2048u;
     config.completion_queue_capacity = 256u;
+    config.max_scenes = 256u;
     return config;
 }
 
@@ -634,6 +678,12 @@ static void asset_server_free_partial(AssetServer *server) {
         asset_mutex_destroy(&server->mutex);
     }
     free(server->root_directory);
+    if (server->scene_records) {
+        for (uint32_t i = 0u; i < server->scene_capacity; ++i) {
+            free(server->scene_records[i].textures);
+        }
+    }
+    free(server->scene_records);
     free(server->gpu_textures);
     free(server->entries);
     free(server->path_map);
@@ -658,6 +708,8 @@ bool asset_server_init(ecs_world_t *world, const AssetServerConfig *input_config
         ? config.job_queue_capacity : defaults.job_queue_capacity;
     const uint32_t completion_capacity = config.completion_queue_capacity
         ? config.completion_queue_capacity : defaults.completion_queue_capacity;
+    const uint32_t max_scenes = config.max_scenes
+        ? config.max_scenes : defaults.max_scenes;
     uint32_t workers_requested = config.worker_count
         ? config.worker_count : asset_default_worker_count();
     if (workers_requested > 32u) {
@@ -666,7 +718,8 @@ bool asset_server_init(ecs_world_t *world, const AssetServerConfig *input_config
 
     if (max_textures > (uint32_t)INT32_MAX ||
         max_textures > (UINT32_MAX / 2u) || job_capacity == 0u ||
-        completion_capacity == 0u || workers_requested == 0u) {
+        completion_capacity == 0u || max_scenes == 0u ||
+        workers_requested == 0u) {
         return false;
     }
 
@@ -684,6 +737,14 @@ bool asset_server_init(ecs_world_t *world, const AssetServerConfig *input_config
         (size_t)max_textures + 1u, sizeof(Texture2D));
     server->entries = (AssetTextureEntry *)calloc(
         (size_t)max_textures + 1u, sizeof(AssetTextureEntry));
+    server->scene_capacity = max_scenes;
+    server->scene_free_head = 0u;
+    server->scene_records = (AssetSceneRecord *)calloc(
+        max_scenes, sizeof(AssetSceneRecord));
+    server->instance_id = g_asset_server_instance++;
+    if (server->instance_id == 0u) {
+        server->instance_id = g_asset_server_instance++;
+    }
     server->path_map_capacity = asset_next_power_of_two(max_textures * 2u);
     if (server->path_map_capacity < max_textures * 2u) {
         asset_server_free_partial(server);
@@ -698,7 +759,7 @@ bool asset_server_init(ecs_world_t *world, const AssetServerConfig *input_config
         workers_requested, sizeof(AssetThread));
 
     if (!server->root_directory || !server->gpu_textures ||
-        !server->entries || !server->path_map ||
+        !server->entries || !server->scene_records || !server->path_map ||
         !server->jobs || !server->completions || !server->workers ||
         !asset_mutex_init(&server->mutex)) {
         asset_server_free_partial(server);
@@ -711,6 +772,12 @@ bool asset_server_init(ecs_world_t *world, const AssetServerConfig *input_config
         return false;
     }
     server->sync_initialized = true;
+
+    for (uint32_t i = 0u; i < max_scenes; ++i) {
+        server->scene_records[i].generation = 1u;
+        server->scene_records[i].next_free =
+            (i + 1u < max_scenes) ? (i + 1u) : UINT32_MAX;
+    }
 
     for (uint32_t i = 0u; i < workers_requested; ++i) {
 #if defined(_WIN32)
@@ -857,29 +924,42 @@ static AssetTextureId asset_request_texture(AssetServer *server,
     return id;
 }
 
-bool asset_bundle_init(ecs_world_t *world, AssetBundle *bundle) {
-    if (!bundle) {
-        return false;
+static AssetSceneRecord *asset_scene_record_from_owner(
+    AssetServer *server, const AssetSceneOwner *owner) {
+    if (!server || !owner || owner->server_instance != server->instance_id ||
+        owner->slot >= server->scene_capacity) {
+        return NULL;
     }
-    memset(bundle, 0, sizeof(*bundle));
-    bundle->server = (AssetServer *)asset_server_get(world);
-    return bundle->server != NULL;
+    AssetSceneRecord *record = &server->scene_records[owner->slot];
+    if (!record->active || record->generation != owner->generation) {
+        return NULL;
+    }
+    return record;
 }
 
-static bool asset_bundle_contains(const AssetBundle *bundle, AssetTextureId id) {
-    for (uint32_t i = 0u; i < bundle->count; ++i) {
-        if (bundle->textures[i] == id) {
-            return true;
-        }
+static uint32_t asset_scene_record_allocate(AssetServer *server,
+                                            ecs_entity_t scene_entity) {
+    if (!server || server->scene_free_head == UINT32_MAX) {
+        return UINT32_MAX;
     }
-    return false;
+    const uint32_t slot = server->scene_free_head;
+    AssetSceneRecord *record = &server->scene_records[slot];
+    server->scene_free_head = record->next_free;
+    record->scene_entity = scene_entity;
+    record->next_free = UINT32_MAX;
+    record->texture_count = 0u;
+    record->texture_capacity = 0u;
+    record->active = true;
+    return slot;
 }
 
-static bool asset_bundle_reserve(AssetBundle *bundle, uint32_t required) {
-    if (required <= bundle->capacity) {
+static bool asset_scene_record_reserve(AssetSceneRecord *record,
+                                       uint32_t required) {
+    if (required <= record->texture_capacity) {
         return true;
     }
-    uint32_t capacity = bundle->capacity ? bundle->capacity * 2u : 16u;
+    uint32_t capacity = record->texture_capacity
+        ? record->texture_capacity * 2u : 16u;
     while (capacity < required) {
         if (capacity > UINT32_MAX / 2u) {
             return false;
@@ -887,64 +967,128 @@ static bool asset_bundle_reserve(AssetBundle *bundle, uint32_t required) {
         capacity *= 2u;
     }
     AssetTextureId *textures = (AssetTextureId *)realloc(
-        bundle->textures, (size_t)capacity * sizeof(AssetTextureId));
+        record->textures, (size_t)capacity * sizeof(AssetTextureId));
     if (!textures) {
         return false;
     }
-    bundle->textures = textures;
-    bundle->capacity = capacity;
+    record->textures = textures;
+    record->texture_capacity = capacity;
     return true;
 }
 
-AssetTextureId asset_bundle_texture(AssetBundle *bundle,
-                                    const char *relative_path,
-                                    AssetPriority priority) {
-    if (!bundle || !bundle->server) {
-        return ASSET_TEXTURE_INVALID;
-    }
-
-    AssetTextureId id = asset_request_texture(bundle->server, relative_path, priority);
-    if (!id) {
-        return ASSET_TEXTURE_INVALID;
-    }
-
-    if (asset_bundle_contains(bundle, id)) {
-        return id;
-    }
-    if (!asset_bundle_reserve(bundle, bundle->count + 1u)) {
-        AssetTextureEntry *entry = &bundle->server->entries[id];
-        if (!entry->bundle_owners && !entry->globally_pinned) {
-            asset_evict_entry(bundle->server, id);
+static bool asset_scene_record_contains(const AssetSceneRecord *record,
+                                        AssetTextureId id) {
+    for (uint32_t i = 0u; i < record->texture_count; ++i) {
+        if (record->textures[i] == id) {
+            return true;
         }
-        return ASSET_TEXTURE_INVALID;
     }
-
-    bundle->textures[bundle->count++] = id;
-    ++bundle->server->entries[id].bundle_owners;
-    return id;
+    return false;
 }
 
-void asset_bundle_unload(AssetBundle *bundle) {
-    if (!bundle) {
+static void asset_scene_record_release(AssetServer *server,
+                                       const AssetSceneOwner *owner) {
+    AssetSceneRecord *record = asset_scene_record_from_owner(server, owner);
+    if (!record) {
         return;
     }
-    if (bundle->server) {
-        for (uint32_t i = 0u; i < bundle->count; ++i) {
-            const AssetTextureId id = bundle->textures[i];
-            if (!id || id >= bundle->server->texture_count) {
-                continue;
-            }
-            AssetTextureEntry *entry = &bundle->server->entries[id];
-            if (entry->bundle_owners) {
-                --entry->bundle_owners;
-            }
-            if (!entry->bundle_owners && !entry->globally_pinned) {
-                asset_evict_entry(bundle->server, id);
-            }
+
+    for (uint32_t i = 0u; i < record->texture_count; ++i) {
+        const AssetTextureId id = record->textures[i];
+        if (!id || id >= server->texture_count) {
+            continue;
+        }
+        AssetTextureEntry *entry = &server->entries[id];
+        if (entry->scene_owners != 0u) {
+            --entry->scene_owners;
+        }
+        if (entry->scene_owners == 0u && !entry->globally_pinned) {
+            asset_evict_entry(server, id);
         }
     }
-    free(bundle->textures);
-    memset(bundle, 0, sizeof(*bundle));
+
+    free(record->textures);
+    record->textures = NULL;
+    record->texture_count = 0u;
+    record->texture_capacity = 0u;
+    record->scene_entity = 0u;
+    record->active = false;
+    record->generation = asset_next_revision(record->generation);
+    record->next_free = server->scene_free_head;
+    server->scene_free_head = owner->slot;
+}
+
+static void asset_scene_owner_on_remove(ecs_iter_t *it) {
+    const AssetSceneOwner *owners = ecs_field(it, AssetSceneOwner, 0);
+    AssetServer *server = (AssetServer *)asset_server_get(it->world);
+    if (!server) {
+        return; /* Server shutdown already released every GPU and CPU resource. */
+    }
+    for (int32_t i = 0; i < it->count; ++i) {
+        asset_scene_record_release(server, &owners[i]);
+    }
+}
+
+AssetTextureId asset_scene_texture(ecs_world_t *world,
+                                   ecs_entity_t scene,
+                                   const char *relative_path,
+                                   AssetPriority priority) {
+    AssetServer *server = (AssetServer *)asset_server_get(world);
+    if (!server || !scene || ecs_id(Scene) == 0u ||
+        !ecs_has(world, scene, Scene)) {
+        return ASSET_TEXTURE_INVALID;
+    }
+
+    const AssetSceneOwner *owner_ptr = ecs_get(world, scene, AssetSceneOwner);
+    AssetSceneOwner owner = {0};
+    AssetSceneRecord *record = NULL;
+
+    if (owner_ptr && owner_ptr->server_instance == server->instance_id) {
+        owner = *owner_ptr;
+        record = asset_scene_record_from_owner(server, &owner);
+    } else {
+        if (owner_ptr) {
+            /* Stale owner from a previous AssetServer instance. Its hook is a no-op. */
+            ecs_remove(world, scene, AssetSceneOwner);
+        }
+        const uint32_t slot = asset_scene_record_allocate(server, scene);
+        if (slot == UINT32_MAX) {
+            return ASSET_TEXTURE_INVALID;
+        }
+        owner.slot = slot;
+        owner.generation = server->scene_records[slot].generation;
+        owner.server_instance = server->instance_id;
+        ecs_set(world, scene, AssetSceneOwner, {
+            .slot = owner.slot,
+            .generation = owner.generation,
+            .server_instance = owner.server_instance
+        });
+        record = &server->scene_records[slot];
+    }
+
+    if (!record) {
+        return ASSET_TEXTURE_INVALID;
+    }
+
+    const AssetTextureId id = asset_request_texture(server, relative_path, priority);
+    if (id == ASSET_TEXTURE_INVALID) {
+        return ASSET_TEXTURE_INVALID;
+    }
+
+    if (asset_scene_record_contains(record, id)) {
+        return id;
+    }
+    if (!asset_scene_record_reserve(record, record->texture_count + 1u)) {
+        AssetTextureEntry *entry = &server->entries[id];
+        if (entry->scene_owners == 0u && !entry->globally_pinned) {
+            asset_evict_entry(server, id);
+        }
+        return ASSET_TEXTURE_INVALID;
+    }
+
+    record->textures[record->texture_count++] = id;
+    ++server->entries[id].scene_owners;
+    return id;
 }
 
 AssetTextureId asset_server_texture_global(ecs_world_t *world,
@@ -1121,7 +1265,7 @@ uint32_t asset_server_collect_unused(AssetServer *server) {
     uint32_t evicted = 0u;
     for (uint32_t id = 1u; id < server->texture_count; ++id) {
         AssetTextureEntry *entry = &server->entries[id];
-        if (!entry->bundle_owners && !entry->globally_pinned &&
+        if (!entry->scene_owners && !entry->globally_pinned &&
             (server->gpu_textures[id].id ||
              entry->status != ASSET_TEXTURE_EMPTY)) {
             asset_evict_entry(server, id);

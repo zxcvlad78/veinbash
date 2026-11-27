@@ -1,4 +1,4 @@
-#include <vb/modules/animation/mod.h>
+#include <modules/animation/mod.h>
 
 ECS_COMPONENT_DECLARE(AnimationSet);
 ECS_COMPONENT_DECLARE(Animator);

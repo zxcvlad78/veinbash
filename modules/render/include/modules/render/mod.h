@@ -1,7 +1,7 @@
 #pragma once
 #include <flecs.h>
 #include <raylib.h>
-#include <vb/modules/asset_server/mod.h>
+#include <modules/asset_server/mod.h>
 
 typedef struct {
   AssetTextureId texture;

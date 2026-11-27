@@ -1,7 +1,7 @@
-#include <vb/modules/animation/mod.h>
-#include <vb/modules/asset_server/mod.h>
-#include <vb/modules/base/mod.h>
-#include <vb/modules/render/mod.h>
+#include <modules/render/mod.h>
+#include <modules/asset_server/mod.h>
+#include <modules/animation/mod.h>
+#include <modules/base/mod.h>
 
 #include <raylib.h>
 
@@ -37,7 +37,7 @@ static void DrawSprite(ecs_iter_t *it) {
     for (int32_t i = 0; i < it->count; ++i) {
         const Texture2D *texture = asset_texture_fast(assets, sprites[i].texture);
         if (!texture) {
-            continue; 
+            continue; /* Asynchronous texture isn't uploaded yet. */
         }
 
         const Rectangle destination = {
@@ -58,8 +58,6 @@ void RenderModuleImport(ecs_world_t *world) {
 
     ECS_COMPONENT_DEFINE(world, Sprite);
 
-    ECS_SYSTEM(world, SpriteAnimation,
-               EcsOnUpdate, Sprite, [in] Animator, [in] AnimationSet);
-    ECS_SYSTEM(world, DrawSprite,
-               EcsPostUpdate, [in] Transform2D, [in] Sprite);
+    ECS_SYSTEM(world, SpriteAnimation, EcsOnUpdate, Sprite, [in] Animator, [in] AnimationSet);
+    ECS_SYSTEM(world, DrawSprite, EcsPostUpdate, [in] Transform2D, [in] Sprite);
 }

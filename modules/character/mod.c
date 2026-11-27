@@ -1,5 +1,5 @@
-#include <vb/modules/base/mod.h>
-#include <vb/modules/character/mod.h>
+#include <modules/base/mod.h>
+#include <modules/character/mod.h>
 
 #include <raylib.h>
 

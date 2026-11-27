@@ -42,11 +42,14 @@ endif()
 
 set(LUA_SRC "${lua_SOURCE_DIR}/src")
 file(GLOB LUA_SOURCES "${LUA_SRC}/*.c")
+list(REMOVE_ITEM LUA_SOURCES "${LUA_SRC}/lua.c" "${LUA_SRC}/luac.c")
 add_library(lua STATIC ${LUA_SOURCES})
 target_include_directories(lua PUBLIC ${LUA_SRC})
 if(UNIX AND NOT APPLE)
     target_link_libraries(lua PUBLIC m ${CMAKE_DL_LIBS})
 endif()
+
+add_subdirectory(modules)
 
 file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES "src/*.c")
 add_executable(${PROJECT_NAME}
@@ -59,9 +62,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    raylib
-    flecs::flecs_static
-    lua
+    vb_base
+    vb_animation
+    vb_asset_server
+    vb_character
+    vb_render
+    vb_scene
+    vb_weapon
+    vb_game
 )
 
 if(UNIX AND NOT APPLE)

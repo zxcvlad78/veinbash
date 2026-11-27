@@ -1,6 +1,5 @@
 #include <math.h>
-#include <stdio.h>
-#include <vb/modules/base/mod.h>
+#include <modules/base/mod.h>
 
 ECS_COMPONENT_DECLARE(Transform2D);
 ECS_COMPONENT_DECLARE(Velocity);
@@ -47,7 +46,6 @@ void Move(ecs_iter_t *it) {
 
 void BaseModuleImport(ecs_world_t *world) {
   ECS_MODULE(world, BaseModule);
-  printf("hello BaseModule!!\n");
 
   ECS_COMPONENT_DEFINE(world, Transform2D);
   ECS_COMPONENT_DEFINE(world, Velocity);

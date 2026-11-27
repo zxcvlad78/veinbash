@@ -3,7 +3,7 @@
 #include <raylib.h>
 
 typedef struct {
-
+    int dmg;
 } ProjectileWeapon;
 
 extern ECS_COMPONENT_DECLARE(Sprite);

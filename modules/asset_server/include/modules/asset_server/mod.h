@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 #include <flecs.h>
-#include <raylib.h>
+
+#include <modules/scene/mod.h>
 
 #ifdef __cplusplus
 #error "veinbash AssetServer is a C11 API; compile this header as C"
@@ -46,6 +47,9 @@ typedef struct AssetServerConfig {
 
     /* Bounded decoded-image queue. Workers wait when it is full. 0 = 256. */
     uint32_t completion_queue_capacity;
+
+    /* Fixed number of scene-owner slots. 0 = 256. */
+    uint32_t max_scenes;
 } AssetServerConfig;
 
 typedef struct AssetServerStats {
@@ -63,14 +67,6 @@ typedef struct AssetServerStats {
     uint64_t resident_texture_bytes;
 } AssetServerStats;
 
-/* A bundle is a cold-path owner. Sprite components never retain/release assets. */
-typedef struct AssetBundle {
-    AssetServer *server;
-    AssetTextureId *textures;
-    uint32_t count;
-    uint32_t capacity;
-} AssetBundle;
-
 typedef struct AssetServerState {
     AssetServer *implementation;
 } AssetServerState;
@@ -87,12 +83,15 @@ void asset_server_fini(ecs_world_t *world);
 /* Obtain the server once per render batch, then use asset_texture_fast(). */
 const AssetServer *asset_server_get(const ecs_world_t *world);
 
-/* Bundle lifetime API: all functions are called on the world/render thread. */
-bool asset_bundle_init(ecs_world_t *world, AssetBundle *bundle);
-AssetTextureId asset_bundle_texture(AssetBundle *bundle,
-                                    const char *relative_path,
-                                    AssetPriority priority);
-void asset_bundle_unload(AssetBundle *bundle);
+/*
+ * Scene lifetime API. No Bundle object is created or destroyed by the caller.
+ * The Scene root owns each requested texture once; deleting the Scene entity
+ * releases its scene-level ownership through a Flecs component lifecycle hook.
+ */
+AssetTextureId asset_scene_texture(ecs_world_t *world,
+                                   ecs_entity_t scene,
+                                   const char *relative_path,
+                                   AssetPriority priority);
 
 /* Globally pinned resource, released only by asset_server_fini(). */
 AssetTextureId asset_server_texture_global(ecs_world_t *world,
@@ -115,6 +114,7 @@ uint32_t asset_server_pump(ecs_world_t *world, uint32_t max_completions);
  * atomic operation, reference count, or generation check. Returns NULL until
  * the first GPU upload succeeds. Returns the old texture during a reload.
  */
+typedef struct Texture Texture2D;
 const Texture2D *asset_texture_fast(const AssetServer *server,
                                     AssetTextureId texture);
 
