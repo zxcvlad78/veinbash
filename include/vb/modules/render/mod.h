@@ -4,7 +4,7 @@
 #include <vb/modules/asset_server/mod.h>
 
 typedef struct {
-  AssetHandle texture;
+  AssetTextureId texture;
   Rectangle rect;
 } Sprite;
 
