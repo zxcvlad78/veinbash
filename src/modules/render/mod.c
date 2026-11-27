@@ -9,7 +9,7 @@ ECS_COMPONENT_DECLARE(Sprite);
 void SpriteAnimation(ecs_iter_t *it) {
   Sprite *s = ecs_field(it, Sprite, 0);
   Animator *a = ecs_field(it, Animator, 1);
-  AnimationSet *as = ecs_field(it, AnimationSet, 3);
+  AnimationSet *as = ecs_field(it, AnimationSet, 2);
 
   for (int i = 0; i < it->count; i++) {
     const AnimationClip *clip = &as[i].clips[a[i].clip_idx];
@@ -39,6 +39,7 @@ void RenderModuleImport(ecs_world_t *world) {
 
   ECS_COMPONENT_DEFINE(world, Sprite);
 
-  ECS_SYSTEM(world, SpriteAnimation, EcsOnUpdate, Sprite, Animator);
+  ECS_SYSTEM(world, SpriteAnimation, EcsOnUpdate, Sprite, Animator,
+             AnimationSet);
   ECS_SYSTEM(world, DrawSprite, EcsOnUpdate, Transform2D, Sprite);
 }

@@ -26,6 +26,8 @@ typedef struct {
   bool finished;
 } Animator;
 
+bool play_animation(ecs_world_t *world, ecs_entity_t e, const char *id);
+
 extern ECS_COMPONENT_DECLARE(AnimationSet);
 extern ECS_COMPONENT_DECLARE(Animator);
 
