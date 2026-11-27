@@ -1,9 +1,10 @@
 #pragma once
 #include <flecs.h>
 #include <raylib.h>
+#include <vb/modules/asset_server/mod.h>
 
 typedef struct {
-  Texture2D texture;
+  AssetHandle texture;
   Rectangle rect;
 } Sprite;
 
