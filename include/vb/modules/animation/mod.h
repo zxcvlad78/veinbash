@@ -20,12 +20,13 @@ typedef struct {
 } AnimationSet;
 
 typedef struct {
-  const AnimationClip *clip;
+  int clip_idx;
   int frame_idx;
   float timer;
   bool finished;
 } Animator;
 
+extern ECS_COMPONENT_DECLARE(AnimationSet);
 extern ECS_COMPONENT_DECLARE(Animator);
 
 void AnimationModuleImport(ecs_world_t *world);

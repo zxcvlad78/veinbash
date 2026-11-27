@@ -7,11 +7,12 @@
 ECS_COMPONENT_DECLARE(Sprite);
 
 void SpriteAnimation(ecs_iter_t *it) {
-  Sprite *s = ecs_field(it, Sprite, 1);
-  Animator *a = ecs_field(it, Animator, 2);
+  Sprite *s = ecs_field(it, Sprite, 0);
+  Animator *a = ecs_field(it, Animator, 1);
+  AnimationSet *as = ecs_field(it, AnimationSet, 3);
 
   for (int i = 0; i < it->count; i++) {
-    const AnimationClip *clip = a[i].clip;
+    const AnimationClip *clip = &as[i].clips[a[i].clip_idx];
     if (!clip)
       continue;
 

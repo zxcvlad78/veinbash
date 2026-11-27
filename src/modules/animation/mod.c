@@ -5,12 +5,15 @@ ECS_COMPONENT_DECLARE(Animator);
 
 void Animation(ecs_iter_t *it) {
   Animator *a = ecs_field(it, Animator, 0);
+  AnimationSet *as = ecs_field(it, AnimationSet, 1);
   float dt = it->delta_time;
 
   for (int i = 0; i < it->count; i++) {
-    if (!a[i].clip || a[i].finished)
+    if (a[i].finished)
       continue;
-    const AnimationClip *c = a[i].clip;
+    const AnimationClip *c = &as[i].clips[a[i].clip_idx];
+    if (!c)
+      continue;
 
     a[i].timer += dt;
     while (a[i].timer >= c->frame_time) {
@@ -36,5 +39,5 @@ void AnimationModuleImport(ecs_world_t *world) {
   ECS_COMPONENT_DEFINE(world, AnimationSet);
   ECS_COMPONENT_DEFINE(world, Animator);
 
-  ECS_SYSTEM(world, Animation, EcsOnUpdate, Animator);
+  ECS_SYSTEM(world, Animation, EcsOnUpdate, Animator, AnimationSet);
 }
