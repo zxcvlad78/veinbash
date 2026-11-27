@@ -93,3 +93,39 @@ AssetTextureId asset_bundle_texture(AssetBundle *bundle,
                                     const char *relative_path,
                                     AssetPriority priority);
 void asset_bundle_unload(AssetBundle *bundle);
+
+/* Globally pinned resource, released only by asset_server_fini(). */
+AssetTextureId asset_server_texture_global(ecs_world_t *world,
+                                           const char *relative_path,
+                                           AssetPriority priority);
+
+/* Explicit reload. A previously ready texture remains usable until replacement. */
+bool asset_texture_reload(ecs_world_t *world,
+                          AssetTextureId texture,
+                          AssetPriority priority);
+
+/*
+ * Process CPU-decoded images and create GPU textures. Call on the raylib thread
+ * once per frame, before the ECS render system. max_completions == 0 is unlimited.
+ */
+uint32_t asset_server_pump(ecs_world_t *world, uint32_t max_completions);
+
+/*
+ * Render hot path: direct table indexing, no hash lookup, lock, allocation,
+ * atomic operation, reference count, or generation check. Returns NULL until
+ * the first GPU upload succeeds. Returns the old texture during a reload.
+ */
+const Texture2D *asset_texture_fast(const AssetServer *server,
+                                    AssetTextureId texture);
+
+AssetTextureStatus asset_texture_status(const AssetServer *server,
+                                        AssetTextureId texture);
+bool asset_texture_error(const AssetServer *server,
+                         AssetTextureId texture,
+                         char *destination,
+                         uint32_t destination_size);
+void asset_server_get_stats(const AssetServer *server,
+                             AssetServerStats *out_stats);
+
+/* Optional maintenance: no-op for owned/pinned entries. Call on render thread. */
+uint32_t asset_server_collect_unused(AssetServer *server);
