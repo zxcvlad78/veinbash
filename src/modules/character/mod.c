@@ -33,8 +33,6 @@ void ApplyInputToWishVelocity(ecs_iter_t *it) {
     wv[i].linear = normalize_vector2(wv[i].linear);
     wv[i].linear.x *= ms[i].x;
     wv[i].linear.y *= ms[i].y;
-
-    printf("normvel: {%f, %f}\n", wv[i].linear.x, wv[i].linear.y);
   }
 }
 
@@ -43,6 +41,8 @@ void CharacterModuleImport(ecs_world_t *world) {
 
   ECS_COMPONENT_DEFINE(world, CharacterControl);
   ECS_COMPONENT_DEFINE(world, MoveSpeed);
+
+  ECS_TAG(world, EventDeath);
 
   ECS_SYSTEM(world, Input, EcsOnUpdate, CharacterControl);
   ECS_SYSTEM(world, ApplyInputToWishVelocity, EcsOnUpdate, CharacterControl,

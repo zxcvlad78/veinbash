@@ -1,4 +1,5 @@
 #include <raylib.h>
+#include <vb/modules/animation/mod.h>
 #include <vb/modules/base/mod.h>
 #include <vb/modules/character/mod.h>
 #include <vb/modules/render/mod.h>
@@ -9,6 +10,7 @@ int main(int argc, char *argv[]) {
 
   ecs_world_t *world = ecs_init_w_args(argc, argv);
   ECS_IMPORT(world, BaseModule);
+  ECS_IMPORT(world, AnimationModule);
   ECS_IMPORT(world, RenderModule);
   ECS_IMPORT(world, CharacterModule);
 

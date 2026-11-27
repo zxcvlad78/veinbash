@@ -1,3 +1,4 @@
+#include <vb/modules/animation/mod.h>
 #include <vb/modules/base/mod.h>
 #include <vb/modules/render/mod.h>
 
@@ -5,7 +6,20 @@
 
 ECS_COMPONENT_DECLARE(Sprite);
 
-void Render(ecs_iter_t *it) {
+void SpriteAnimation(ecs_iter_t *it) {
+  Sprite *s = ecs_field(it, Sprite, 1);
+  Animator *a = ecs_field(it, Animator, 2);
+
+  for (int i = 0; i < it->count; i++) {
+    const AnimationClip *clip = a[i].clip;
+    if (!clip)
+      continue;
+
+    s[i].rect = clip->frames[a[i].frame_idx].rect;
+  }
+}
+
+void DrawSprite(ecs_iter_t *it) {
   Transform2D *t = ecs_field(it, Transform2D, 0);
   Sprite *s = ecs_field(it, Sprite, 1);
 
@@ -15,7 +29,6 @@ void Render(ecs_iter_t *it) {
                       s[i].rect.height * t[i].scale.y};
 
     Vector2 origin = {0.0f, 0.0f};
-
     DrawTexturePro(s[i].texture, s[i].rect, dest, origin, t[i].rotation, WHITE);
   }
 }
@@ -25,5 +38,6 @@ void RenderModuleImport(ecs_world_t *world) {
 
   ECS_COMPONENT_DEFINE(world, Sprite);
 
-  ECS_SYSTEM(world, Render, EcsOnUpdate, Transform2D, Sprite);
+  ECS_SYSTEM(world, SpriteAnimation, EcsOnUpdate, Sprite, Animator);
+  ECS_SYSTEM(world, DrawSprite, EcsOnUpdate, Transform2D, Sprite);
 }
