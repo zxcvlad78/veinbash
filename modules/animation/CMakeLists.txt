@@ -1,4 +1,4 @@
-add_library(vb_animation STATIC mod.c)
+add_library(vb_animation STATIC mod.cpp)
 
 target_include_directories(vb_animation PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include

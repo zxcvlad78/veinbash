@@ -2,33 +2,33 @@
 #include <flecs.h>
 #include <raylib.h>
 
-typedef struct {
-  Rectangle rect;
-} AnimationFrame;
+namepsace vb {
+namespace animation {
 
-typedef struct {
-  const char *id;
-  AnimationFrame *frames;
-  int frame_count;
-  float frame_time;
-  bool loop;
-} AnimationClip;
+struct AnimationFrame {
+    Rectangle rect;
+};
 
-typedef struct {
-  AnimationClip *clips;
-  int clip_count;
-} AnimationSet;
+struct AnimationClip {
+    const char *id;
+    AnimationFrame *frames;
+    i32 frame_count;
+    f32 frame_time;
+    bool loop;
+};
 
-typedef struct {
-  int clip_idx;
-  int frame_idx;
-  float timer;
-  bool finished;
-} Animator;
+struct AnimationSet {
+    AnimationClip *clips;
+    i32 clip_count;
+};
 
-bool play_animation(ecs_world_t *world, ecs_entity_t e, const char *id);
+struct Animator {
+    i32 clip_idx;
+    i32 frame_idx;
+    f32 timer;
+    bool finished;
+};
 
-extern ECS_COMPONENT_DECLARE(AnimationSet);
-extern ECS_COMPONENT_DECLARE(Animator);
+bool Animator::play_animation(ecs_world_t *world, const char *id);
 
-void AnimationModuleImport(ecs_world_t *world);
+}}
