@@ -82,7 +82,7 @@ void ${mod_pascal}ModuleImport(ecs_world_t *world);
 
 EOF
 
-    cat > "$mod_src_dir/mod.c" <<EOF
+    cat > "$mod_src_dir/mod.cpp" <<EOF
 #include "modules/${mod_name}/mod.h"
 
 void ${mod_pascal}ModuleImport(ecs_world_t *world) {

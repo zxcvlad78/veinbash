@@ -199,12 +199,8 @@ add_dependencies(lua luajit_external)
 
 add_subdirectory(modules)
 
-file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES
-    "${PROJECT_SOURCE_DIR}/src/*.c"
-)
-
 add_executable(${PROJECT_NAME}
-    ${${PROJECT_NAME}_SOURCES}
+    "src/unity.cpp"
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
