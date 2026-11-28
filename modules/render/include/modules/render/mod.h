@@ -1,10 +1,9 @@
 #pragma once
 #include <flecs.h>
 #include <raylib.h>
-#include <modules/asset_server/mod.h>
 
 typedef struct {
-  AssetTextureId texture;
+  u64 texture;
   Rectangle rect;
 } Sprite;
 

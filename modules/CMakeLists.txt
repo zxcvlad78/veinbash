@@ -1,5 +1,4 @@
 add_subdirectory(animation)
-add_subdirectory(asset_server)
 add_subdirectory(base)
 add_subdirectory(character)
 add_subdirectory(render)

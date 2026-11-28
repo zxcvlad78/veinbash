@@ -121,7 +121,7 @@ elseif(WIN32)
         REQUIRED
     )
     set(LUAJIT_LIBRARY "${LUAJIT_SRC_DIR}/libluajit.a")
-    
+
     ExternalProject_Add(luajit_external
         PREFIX "${LUAJIT_PREFIX}"
 
@@ -197,10 +197,19 @@ endif()
 
 add_dependencies(lua luajit_external)
 
+set(CMAKE_UNITY_BUILD ON)
+set(CMAKE_UNITY_BUILD_BATCH_SIZE 16)
+
+if(MSVC)
+    add_compile_options(/FI"${CMAKE_SOURCE_DIR}/include/types.h")
+else()
+    add_compile_options(-include "${CMAKE_SOURCE_DIR}/include/types.h")
+endif()
+
 add_subdirectory(modules)
 
 add_executable(${PROJECT_NAME}
-    "src/unity.cpp"
+    "src/main.cpp"
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
