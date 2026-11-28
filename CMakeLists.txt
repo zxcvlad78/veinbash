@@ -1,11 +1,10 @@
 
 cmake_minimum_required(VERSION 3.24)
 
-project(veinbash C)
+project(veinbash LANGUAGES C CXX)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
@@ -197,13 +196,14 @@ endif()
 
 add_dependencies(lua luajit_external)
 
-set(CMAKE_UNITY_BUILD ON)
+option(VB_UNITY_BUILD "Enable unity build (disable for clangd/IDE analysis)" OFF)
+set(CMAKE_UNITY_BUILD ${VB_UNITY_BUILD})
 set(CMAKE_UNITY_BUILD_BATCH_SIZE 16)
 
 if(MSVC)
-    add_compile_options(/FI"${CMAKE_SOURCE_DIR}/include/types.h")
+    add_compile_options(/FI"${CMAKE_SOURCE_DIR}/include/vb/types.h")
 else()
-    add_compile_options(-include "${CMAKE_SOURCE_DIR}/include/types.h")
+    add_compile_options(-include "${CMAKE_SOURCE_DIR}/include/vb/types.h")
 endif()
 
 add_subdirectory(modules)

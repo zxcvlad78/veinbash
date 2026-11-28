@@ -1,12 +1,19 @@
 #pragma once
+
 #include <flecs.h>
 #include <raylib.h>
 
-typedef struct {
-  u64 texture;
-  Rectangle rect;
-} Sprite;
+namespace vb {
+namespace render {
 
-extern ECS_COMPONENT_DECLARE(Sprite);
+struct Sprite {
+    u64 texture = 0;
+    Rectangle rect{0.0f, 0.0f, 0.0f, 0.0f};
+};
 
-void RenderModuleImport(ecs_world_t *world);
+struct module {
+    module(flecs::world &world);
+};
+
+} // namespace render
+} // namespace vb

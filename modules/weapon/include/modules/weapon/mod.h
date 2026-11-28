@@ -1,11 +1,17 @@
 #pragma once
+
 #include <flecs.h>
-#include <raylib.h>
 
-typedef struct {
-    int dmg;
-} ProjectileWeapon;
+namespace vb {
+namespace weapon {
 
-extern ECS_COMPONENT_DECLARE(Sprite);
+struct ProjectileWeapon {
+    int dmg = 0;
+};
 
-void WeaponModuleImport(ecs_world_t *world);
+struct module {
+    module(flecs::world &world);
+};
+
+} // namespace weapon
+} // namespace vb

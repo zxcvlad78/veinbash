@@ -1,10 +1,10 @@
-add_library(vb_base STATIC mod.c)
+add_library(vb_base STATIC mod.cpp)
 
 target_include_directories(vb_base PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(vb_base PUBLIC 
+target_link_libraries(vb_base PUBLIC
     raylib
     flecs::flecs_static
     lua

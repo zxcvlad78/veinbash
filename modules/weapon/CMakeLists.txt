@@ -1,9 +1,9 @@
-add_library(vb_weapon STATIC mod.c)
+add_library(vb_weapon STATIC mod.cpp)
 
 target_include_directories(vb_weapon PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(vb_weapon PUBLIC 
+target_link_libraries(vb_weapon PUBLIC
     vb_base
 )

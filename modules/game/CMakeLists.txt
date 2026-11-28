@@ -1,10 +1,10 @@
-add_library(vb_game STATIC mod.c)
+add_library(vb_game STATIC mod.cpp)
 
 target_include_directories(vb_game PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(vb_game PUBLIC 
+target_link_libraries(vb_game PUBLIC
     vb_base
     vb_animation
     vb_asset_server

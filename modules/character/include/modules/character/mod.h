@@ -1,25 +1,32 @@
 #pragma once
+
 #include <flecs.h>
 
-typedef struct {
-  float points;
-  float max_points;
-} Health;
+namespace vb {
+namespace character {
 
-typedef struct {
-  ecs_entity_t killer;
-} EventDeath;
+struct Health {
+    float points = 0.0f;
+    float max_points = 0.0f;
+};
 
-typedef struct {
-  bool up, down, left, right;
-} CharacterControl;
+struct EventDeath {};
 
-typedef struct {
-  float x, y;
-} MoveSpeed;
+struct CharacterControl {
+    bool up = false;
+    bool down = false;
+    bool left = false;
+    bool right = false;
+};
 
-extern ECS_COMPONENT_DECLARE(EventDeath);
-extern ECS_COMPONENT_DECLARE(CharacterControl);
-extern ECS_COMPONENT_DECLARE(MoveSpeed);
+struct MoveSpeed {
+    float x = 0.0f;
+    float y = 0.0f;
+};
 
-void CharacterModuleImport(ecs_world_t *world);
+struct module {
+    module(flecs::world &world);
+};
+
+} // namespace character
+} // namespace vb

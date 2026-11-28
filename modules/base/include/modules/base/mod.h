@@ -1,22 +1,32 @@
 #pragma once
+
 #include <flecs.h>
 #include <raylib.h>
 
-typedef struct {
-  Vector2 linear;
-  float angular;
-} Velocity, WishVelocity;
+namespace vb {
+namespace base {
+
+struct Velocity {
+    Vector2 linear{0.0f, 0.0f};
+    float angular = 0.0f;
+};
+
+struct WishVelocity {
+    Vector2 linear{0.0f, 0.0f};
+    float angular = 0.0f;
+};
+
+struct Transform2D {
+    Vector2 translation{0.0f, 0.0f};
+    Vector2 scale{1.0f, 1.0f};
+    float rotation = 0.0f;
+};
 
 Vector2 normalize_vector2(Vector2 v);
 
-typedef struct {
-  Vector2 translation;
-  Vector2 scale;
-  float rotation;
-} Transform2D;
+struct module {
+    module(flecs::world &world);
+};
 
-extern ECS_COMPONENT_DECLARE(Velocity);
-extern ECS_COMPONENT_DECLARE(WishVelocity);
-extern ECS_COMPONENT_DECLARE(Transform2D);
-
-void BaseModuleImport(ecs_world_t *world);
+} // namespace base
+} // namespace vb
