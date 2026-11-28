@@ -5,8 +5,12 @@
 namespace vb {
 namespace weapon {
 
-struct ProjectileWeapon {
-    int dmg = 0;
+struct Damage {
+    f32 falue;
+};
+
+struct Weapon {
+    flecs::entity projectile_prefab;
 };
 
 struct module {

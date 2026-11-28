@@ -1,5 +1,7 @@
 #include <modules/character/mod.h>
-#include <modules/base/mod.h>
+#include <modules/base/components.h>
+#include <modules/physics/mod.h>
+#include <modules/physics/components.h>
 
 #include <raylib.h>
 
@@ -22,8 +24,8 @@ module::module(flecs::world &world) {
             cc.right = IsKeyDown(KEY_D);
         });
 
-    world.system<CharacterControl, base::WishVelocity, const MoveSpeed>("ApplyInputToWishVelocity")
-        .each([](CharacterControl &cc, base::WishVelocity &wv, const MoveSpeed &ms) {
+    world.system<CharacterControl, physics::WishVelocity, const MoveSpeed>("ApplyInputToWishVelocity")
+        .each([](CharacterControl &cc, physics::WishVelocity &wv, const MoveSpeed &ms) {
             wv.linear.x = 0.0f;
             wv.linear.y = 0.0f;
             wv.linear.x += static_cast<float>(cc.right);
@@ -31,7 +33,7 @@ module::module(flecs::world &world) {
             wv.linear.y += static_cast<float>(cc.down);
             wv.linear.y -= static_cast<float>(cc.up);
 
-            wv.linear = base::normalize_vector2(wv.linear);
+            wv.linear = physics::normalize_vector2(wv.linear);
             
             wv.linear.x *= ms.x;
             wv.linear.y *= ms.y;

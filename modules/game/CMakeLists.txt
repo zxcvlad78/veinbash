@@ -12,4 +12,5 @@ target_link_libraries(vb_game PUBLIC
     vb_render
     vb_scene
     vb_weapon
+    vb_physics
 )

@@ -201,7 +201,7 @@ set(CMAKE_UNITY_BUILD ${VB_UNITY_BUILD})
 set(CMAKE_UNITY_BUILD_BATCH_SIZE 16)
 
 if(MSVC)
-    add_compile_options(/FI"${CMAKE_SOURCE_DIR}/include/vb/types.h")
+    add_compile_options("/FI${CMAKE_SOURCE_DIR}/include/vb/types.h")
 else()
     add_compile_options(-include "${CMAKE_SOURCE_DIR}/include/vb/types.h")
 endif()

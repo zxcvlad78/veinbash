@@ -1,7 +1,7 @@
 #include <modules/render/mod.h>
 #include <modules/animation/mod.h>
 #include <modules/asset_server/mod.h>
-#include <modules/base/mod.h>
+#include <modules/base/components.h>
 
 #include <raylib.h>
 

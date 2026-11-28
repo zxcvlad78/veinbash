@@ -6,4 +6,5 @@ target_include_directories(vb_character PUBLIC
 
 target_link_libraries(vb_character PUBLIC
     vb_base
+    vb_physics
 )

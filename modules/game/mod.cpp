@@ -2,17 +2,27 @@
 
 #include <modules/animation/mod.h>
 #include <modules/asset_server/mod.h>
+
 #include <modules/base/mod.h>
+#include <modules/base/components.h>
+
+#include <modules/physics/mod.h>
+#include <modules/physics/components.h>
+
 #include <modules/character/mod.h>
 #include <modules/render/mod.h>
 #include <modules/scene/mod.h>
 #include <modules/weapon/mod.h>
+
 
 #include <raylib.h>
 #include <cstdio>
 
 namespace vb {
 namespace game {
+
+constexpr float FIXED_DT = 1.0f / 60.0f;
+constexpr float MAX_FRAME_DT = 0.25f;
 
 static void init_window() {
     InitWindow(1280, 720, "veinbash");
@@ -25,12 +35,13 @@ module::module(flecs::world &world) {
     init_window();
 
     world.import<base::module>();
+    world.import<physics::module>();
     world.import<animation::module>();
     world.import<scene::module>();
     world.import<asset_server::module>();
-    world.import<render::module>();
     world.import<character::module>();
     world.import<weapon::module>();
+    world.import<render::module>();
 
     flecs::entity scene_entity = scene::create(world, "Scene");
     if (!scene_entity.is_alive()) {
@@ -69,19 +80,38 @@ module::module(flecs::world &world) {
     player.set<base::Transform2D>({{640.0f, 320.0f}, {2.0f, 2.0f}, 0.0f});
     player.set<character::CharacterControl>({});
     player.set<character::MoveSpeed>({150.0f, 150.0f});
-    player.set<base::Velocity>({{0.0f, 0.0f}, 0.0f});
-    player.set<base::WishVelocity>({{0.0f, 0.0f}, 0.0f});
+    player.set<physics::Velocity>({{0.0f, 0.0f}, 0.0f});
+    player.set<physics::WishVelocity>({{0.0f, 0.0f}, 0.0f});
     player.set<render::Sprite>({player_atlas, {0.0f, 0.0f, 16.0f, 32.0f}});
     player.set<animation::AnimationSet>({clips, 2});
     player.set<animation::Animator>({0, 0, 0.0f, false});
 
     animation::play(world, player, "idle");
 
+    flecs::entity physics_pipeline = world.pipeline("Physics")
+        .with(flecs::System)
+        .with<vb::physics::FixedUpdate>()
+        .build();
+
+    float accumulator = 0.0f;
     while (!WindowShouldClose()) {
+        const float frame_dt = GetFrameTime();
+
+        accumulator += std::min(frame_dt, MAX_FRAME_DT);
+
+        while (accumulator >= FIXED_DT) {
+            world.run_pipeline(
+                physics_pipeline,
+                FIXED_DT
+            );
+
+            accumulator -= FIXED_DT;
+        }
+
         BeginDrawing();
         ClearBackground(Color{110, 0, 0, 255});
 
-        world.progress(GetFrameTime());
+        world.progress(frame_dt);
 
         EndDrawing();
     }
